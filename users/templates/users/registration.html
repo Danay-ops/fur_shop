@@ -14,13 +14,13 @@
                                         {% csrf_token %}
                                         <div class="row">
                                             <div class="col-md-6 mb-3">
-                                                <label for="id_fist_name" class="form-label">Имя*</label>
-                                                <input type="text" class="form-control" id="id_fist_name"
+                                                <label for="id_first_name" class="form-label">Имя*</label>
+                                                <input type="text" class="form-control" id="id_first_name"
                                                        value="{% if form.first_name.value %}{{form.first_name.value}}{%endif%}"
-                                                       name="fist_name"
+                                                       name="first_name"
                                                     placeholder="Введите ваше имя" required>
                                                     {% if form.first_name.errors %}
-                                                    <div class="alert alert-danger alert-dismissible fade show">{{form.fist_name.errors}}</div>
+                                                        <div class="alert alert-danger alert-dismissible fade show">{{form.first_name.errors}}</div>
                                                     {%endif%}
                                             </div>
                                             <div class="col-md-6 mb-3">
