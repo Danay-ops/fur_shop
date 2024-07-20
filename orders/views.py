@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import render, redirect
 
@@ -11,7 +12,7 @@ from rest_framework.exceptions import ValidationError
 
 from orders.models import OrderItem
 
-
+@login_required
 def create_order(request):
      if request.method == 'POST':
          form = CreateOrderForm(data=request.POST)
