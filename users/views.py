@@ -55,8 +55,12 @@ def registration(request):
         form = UserRegistrationForm(data=request.POST)
         if form.is_valid():
                 form.save()
+                session_key = request.session.session_key
+
                 user = form.instance
                 auth.login(request,user)
+                if session_key:
+                    Cart.objects.filter(session_key=session_key).update(user=user)
                 return HttpResponseRedirect(reverse('main:index'))
     else:
         form = UserRegistrationForm()
