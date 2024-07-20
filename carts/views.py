@@ -50,8 +50,10 @@ def cart_add(request, product_slug):
                 cart.save()
         else:
             Cart.objects.create(user=request.user, product=product, quantity=1)
+    user_cart = get_user_carts(request)
+    return redirect(request.META['HTTP_REFERER'])
 
-    else:
+"""    else:
         carts = Cart.objects.filter(
             session_key=request.session.session_key, product=product)
 
@@ -62,8 +64,8 @@ def cart_add(request, product_slug):
                 cart.save()
         else:
             Cart.objects.create(
-                session_key=request.session.session_key, product=product, quantity=1)
-    return redirect(request.META['HTTP_REFERER'])
+                session_key=request.session.session_key, product=product, quantity=1)"""
+
 """    user_cart = get_user_carts(request)
     cart_items_html = render_to_string(
         "carts/includes/included_cart.html", {"carts": user_cart}, request=request)
@@ -107,31 +109,12 @@ def cart_change(request,product_slug):
     return JsonResponse(response_data)
 
 
-def cart_remove(request,product_slug):
-    cart_id = request.POST.get("cart_id")
+def cart_remove(request,cart_id):
     cart = Cart.objects.get(id=cart_id)
-    quantity = cart.quantity
+
     cart.delete()
 
-    user_cart = get_user_carts(request)
-
-    context = {"carts": user_cart}
-
-    # if referer page is create_order add key orders: True to context
-    referer = request.META.get('HTTP_REFERER')
-    if reverse('orders:create_order') in referer:
-        context["order"] = True
-
-    cart_items_html = render_to_string(
-        "carts/includes/included_cart.html", context, request=request)
-
-    response_data = {
-        "message": "Товар удален",
-        "cart_items_html": cart_items_html,
-        "quantity_deleted": quantity,
-    }
-
-    return JsonResponse(response_data)
+    return redirect(request.META['HTTP_REFERER'])
 
 
 #_________________________ API ________________________
