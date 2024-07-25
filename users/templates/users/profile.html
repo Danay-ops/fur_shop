@@ -90,9 +90,9 @@
                                             {% include "carts/includes/included_cart.html" %}
                                             <!-- Закончилась разметка корзины -->
                                         </div>
-                                        {% if cart %}
-                                            <a class="btn btn-dark" href="../orders/create_order.html">
-                                                Оформить заказ
+                                        {% if  carts %}
+                                            <a class="btn btn-dark" href="{% url "orders:create_order" %}">
+                                                Оформить
                                             </a>
                                         {% endif %}
                                     </div>

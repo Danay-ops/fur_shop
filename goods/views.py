@@ -37,9 +37,12 @@ def product(request, product_slug):
 
 #-----------------------API------------------------------
 
-class CategoryApiView(viewsets.ReadOnlyModelViewSet):
-    queryset = Categories.objects.all()
+# GET /categories
+class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CategorySerializer
+
+    def get_queryset(self):
+        return Categories.objects.all()
 
 class ProductByCategoryApiView(viewsets.ViewSet):
     def create(self, request):
