@@ -3,10 +3,12 @@ from decimal import Decimal
 from django.core.paginator import Paginator
 from django.shortcuts import render, get_list_or_404
 from goods.models import Products,Categories
-from rest_framework import viewsets
-from goods.serializers import CategorySerializer, ProductSerializer,ProductGetterSerializer
+
+from goods.serializers import CategorySerializer, ProductSerializer, ProductGetterSerializer
 from rest_framework.decorators import action
+
 from rest_framework.response import Response
+from rest_framework import viewsets
 
 
 
@@ -37,15 +39,39 @@ def product(request, product_slug):
 
 #-----------------------API------------------------------
 
-# GET /categories
+#GET /categories - возвращение списка категорий. У категорий может быть несколько уровней вложенности.
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    A ViewSet for managing categories. It inherits from ReadOnlyModelViewSet,
+    which provides read-only operations like 'list' and 'retrieve'.
+    """
     serializer_class = CategorySerializer
 
     def get_queryset(self):
+        
         return Categories.objects.all()
-
+    
+    
+#POST /products — получение товаров по категории,
 class ProductByCategoryApiView(viewsets.ViewSet):
+    """
+    A ViewSet for managing products by category. It inherits from ViewSet,
+    which provides basic CRUD operations.
+
+    The 'create' method is overridden to handle POST requests for retrieving products by category.
+    """
+
     def create(self, request):
+        """
+        Handle POST requests to retrieve products by category.
+
+        Parameters:
+        - request (Request): The incoming request object containing the category slug in the request data.
+
+        Returns:
+        - Response: A JSON response containing the serialized products if the category is found.
+                      If the category is not found, a JSON response with an error message and a 404 status code.
+        """
         category_slug = request.data.get('category')
         category = Categories.objects.get(slug=category_slug)
 
@@ -66,6 +92,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def get_products(self, request):
+        # Получение фильтров из URl
         min_price = request.query_params.get('min_price')
         max_price = request.query_params.get('max_price')
         sort_by = request.query_params.get('sort_by', 'price')
@@ -85,6 +112,35 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         serializer = self.serializer_class(queryset, many=True)
         return Response(serializer.data)
+
+    # Тестовый метод для проверки фильтрации и сортировки
+"""    @action(detail=False, methods=['get'])
+    def test_filter_and_sort(self, request):
+        min_price = request.query_params.get('min_price')
+        max_price = request.query_params.get('max_price')
+        sort_by = request.query_params.get('sort_by', 'price')
+
+        queryset = self.queryset
+
+        # Фильтрация
+        if min_price:
+            queryset = queryset.filter(price__gte=Decimal(min_price))
+        if max_price:
+            queryset = queryset.filter(price__lte=Decimal(max_price))
+
+        # Сортировка
+        if sort_by.startswith('-'):
+            field_name = sort_by[1:]  # Получить имя поля для сортировки без минуса "-"
+            queryset = queryset.order_by('-' + field_name)
+        else:
+            queryset = queryset.order_by(sort_by)
+
+        # Преобразование в список для удобства вывода
+        product_list = [
+            {'id': product.id, 'name': product.name, 'price': product.price}
+            for product in queryset
+        ]
+        return Response(product_list)"""
 
 
 

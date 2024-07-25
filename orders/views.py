@@ -1,25 +1,34 @@
 import uuid
 from decimal import Decimal
-
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import render, redirect
 from django.urls import reverse
-
 from orders.forms import CreateOrderForm
 from goods.models import Products
-
 from carts.models import Cart
-
 from orders.models import Order
 from rest_framework.exceptions import ValidationError
-
 from django.conf import settings
 from orders.models import OrderItem
 
+#API
+from rest_framework.views import APIView
+from rest_framework import viewsets
+
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from orders.serializers import OrderSerializer
+
 from yookassa import Configuration, Payment
+
+
+
+
 Configuration.account_id = settings.YOOKASSA_SHOP_ID
 Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
+
 """@login_required
 def create_order(request):
      if request.method == 'POST':
@@ -179,3 +188,64 @@ def payment_success(request):
          del request.session[key]
     return render(request, 'orders/payment-success.html')
 
+
+
+#----------------------------- API -----------------------------
+
+
+
+class CreateOrderView(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    def post(self, request):
+        user = request.user
+        cart_items = Cart.objects.filter(user=user)
+
+
+        if not cart_items.exists():
+            return Response({"error": "Ваша корзина пуста"}, status=status.HTTP_400_BAD_REQUEST)
+
+        form = CreateOrderForm(data=request.data)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    # Создать заказ
+                    order = Order.objects.create(
+                        user=user,
+                        phone_number=form.cleaned_data['phone_number'],
+                        requires_delivery=form.cleaned_data['requires_delivery'],
+                        delivery_address=form.cleaned_data['delivery_address'],
+                        payment_on_get=form.cleaned_data['payment_on_get'],
+                    )
+
+                    # Создать заказанные товары
+                    for cart_item in cart_items:
+                        product = cart_item.product
+                        name = cart_item.product.name
+                        price = cart_item.product.sell_price()
+                        quantity = cart_item.quantity
+
+                        if product.quantity < quantity:
+                            raise ValueError(f'Недостаточное количество товара {name} на складе. В наличии - {product.quantity}')
+
+                        OrderItem.objects.create(
+                            order=order,
+                            product=product,
+                            name=name,
+                            price=price,
+                            quantity=quantity,
+                        )
+                        product.quantity -= quantity
+                        product.save()
+
+                    # Очистить корзину пользователя после создания заказа
+                    cart_items.delete()
+
+                    # Сериализовать заказ
+                    order_serializer = OrderSerializer(order)
+                    return Response(order_serializer.data, status=status.HTTP_201_CREATED)
+            except ValueError as e:
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
